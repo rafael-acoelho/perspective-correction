@@ -1,6 +1,13 @@
 import cv2
 import numpy as np
 
+def get_Points(event, x, y, flags, param):
+    if event == cv2.EVENT_LBUTTONDOWN:
+        P.append((x, y))
+        cv2.circle(img, (x, y), 5, (0, 255, 0), thickness = -1)
+        cv2.imshow(window_name, img)
+
+
 def getPerspectiveTransform(src, dst):
 
     A = []
@@ -63,48 +70,59 @@ def perspectiveWarp(img, M, new_shape):
     return warped
 
 
-name = "img_examples/1.jpeg"
+name = "img_examples/2.jpeg"
 img = cv2.imread(name)
 
-# resize
+# Resize
 i = 0.5
 (h, w, c) = img.shape
 img = cv2.resize(img, (int(i*w), int(i*h)))
 
-# Pixels obtidos
-A = (168, 202)
-B = (434, 221)
-C = (433, 573)
-D = (31, 513)
+# Obter pixels
+P = []
+window_name = "original"
 
-src = np.asarray([A,B,C,D], dtype = "float32")
-
-# Tamanhos
-widthA = np.sqrt(((C[0] - D[0]) ** 2) + ((C[1] - D[1]) ** 2))
-widthB = np.sqrt(((B[0] - A[0]) ** 2) + ((B[1] - A[1]) ** 2))
-maxWidth = max(int(widthA), int(widthB))
-
-heightA = np.sqrt(((B[0] - C[0]) ** 2) + ((B[1] - C[1]) ** 2))
-heightB = np.sqrt(((A[0] - D[0]) ** 2) + ((A[1] - D[1]) ** 2))
-maxHeight = max(int(heightA), int(heightB))
-
-dst = np.array([[0, 0],
-                [maxWidth - 1, 0],
-                [maxWidth - 1, maxHeight - 1],
-                [0, maxHeight - 1]], dtype = "float32")
+while True:
+    # Se ja pegou todos os 4 pixels
+    if len(P) == 4:
+        # Selecao dos pixels
+        A = P[0]
+        B = P[1]
+        C = P[2]
+        D = P[3]
 
 
+        src = np.asarray([A,B,C,D], dtype = "float32")
 
-M = getPerspectiveTransform(src, dst)
-warped = perspectiveWarp(img, M, (maxHeight, maxWidth, 3))
+        # Tamanhos
+        widthA = np.sqrt(((C[0] - D[0]) ** 2) + ((C[1] - D[1]) ** 2))
+        widthB = np.sqrt(((B[0] - A[0]) ** 2) + ((B[1] - A[1]) ** 2))
+        maxWidth = max(int(widthA), int(widthB))
+
+        heightA = np.sqrt(((B[0] - C[0]) ** 2) + ((B[1] - C[1]) ** 2))
+        heightB = np.sqrt(((A[0] - D[0]) ** 2) + ((A[1] - D[1]) ** 2))
+        maxHeight = max(int(heightA), int(heightB))
+
+        dst = np.array([[0, 0],
+                        [maxWidth - 1, 0],
+                        [maxWidth - 1, maxHeight - 1],
+                        [0, maxHeight - 1]], dtype = "float32")
 
 
-M_cv2 = cv2.getPerspectiveTransform(src, dst)
-warped_cv2 = cv2.warpPerspective(img, M_cv2, (maxWidth, maxHeight))
+        M = getPerspectiveTransform(src, dst)
+        warped = perspectiveWarp(img, M, (maxHeight, maxWidth, 3))
 
 
-cv2.imshow("original", img)
-cv2.imshow("warp", warped)
-cv2.imshow("warped_cv2", warped_cv2)
+        M_cv2 = cv2.getPerspectiveTransform(src, dst)
+        warped_cv2 = cv2.warpPerspective(img, M_cv2, (maxWidth, maxHeight))
+        
+        cv2.imshow("warp", warped)
+        cv2.imshow("warped_cv2", warped_cv2)
+        break
+    
+    cv2.imshow(window_name, img)
+    cv2.setMouseCallback(window_name, get_Points)
+    cv2.waitKey(1)
+
 cv2.waitKey(0)
 cv2.destroyAllWindows()
