@@ -1,14 +1,27 @@
 import cv2
 import numpy as np
 
-def get_Points(event, x, y, flags, param):
+def get_points(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         P.append((x, y))
-        cv2.circle(img, (x, y), 5, (0, 255, 0), thickness = -1)
-        cv2.imshow(window_name, img)
+        cv2.circle(img_display, (x, y), 5, (0, 255, 0), thickness = -1)
+        cv2.imshow(window_name, img_display)
 
 
-def getPerspectiveTransform(src, dst):
+def order_points(P):
+    sums = np.sum(P, axis = 1)
+    sums = np.sum(P, axis = 1)
+
+    A = P[np.argmin(sums)]
+    C = P[np.argmax(sums)]
+
+    diffs = np.diff(P, axis = 1)#.reshape((4,))
+    B = P[np.argmin(diffs)]
+    D = P[np.argmax(diffs)]
+    return A, B, C, D
+
+
+def get_perspective_transform(src, dst):
 
     A = []
     b = []
@@ -42,7 +55,7 @@ def getPerspectiveTransform(src, dst):
     return M
 
 
-def perspectiveWarp(img, M, new_shape):
+def perspective_warp(img, M, new_shape):
     
     shape = np.asarray(new_shape)
     h = shape[0]
@@ -70,7 +83,7 @@ def perspectiveWarp(img, M, new_shape):
     return warped
 
 
-name = "img_examples/2.jpeg"
+name = "img_examples/6.jpeg"
 img = cv2.imread(name)
 
 # Resize
@@ -81,15 +94,13 @@ img = cv2.resize(img, (int(i*w), int(i*h)))
 # Obter pixels
 P = []
 window_name = "original"
+img_display = np.copy(img)
 
 while True:
     # Se ja pegou todos os 4 pixels
     if len(P) == 4:
         # Selecao dos pixels
-        A = P[0]
-        B = P[1]
-        C = P[2]
-        D = P[3]
+        A, B, C, D = order_points(P)
 
 
         src = np.asarray([A,B,C,D], dtype = "float32")
@@ -109,8 +120,8 @@ while True:
                         [0, maxHeight - 1]], dtype = "float32")
 
 
-        M = getPerspectiveTransform(src, dst)
-        warped = perspectiveWarp(img, M, (maxHeight, maxWidth, 3))
+        M = get_perspective_transform(src, dst)
+        warped = perspective_warp(img, M, (maxHeight, maxWidth, 3))
 
 
         M_cv2 = cv2.getPerspectiveTransform(src, dst)
@@ -120,8 +131,8 @@ while True:
         cv2.imshow("warped_cv2", warped_cv2)
         break
     
-    cv2.imshow(window_name, img)
-    cv2.setMouseCallback(window_name, get_Points)
+    cv2.imshow(window_name, img_display)
+    cv2.setMouseCallback(window_name, get_points)
     cv2.waitKey(1)
 
 cv2.waitKey(0)
